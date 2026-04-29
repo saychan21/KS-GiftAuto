@@ -17,9 +17,8 @@ GIFT_URL = "https://ks-giftcode.centurygame.com/"
 # 👉 여기만 수정하면 됨
 # =========================
 PLAYERS = {
-    "계정1": "123456",
-    "계정2": "999999",
-    "계정3": "888888",
+    "Ethereal": "17770771",
+    "Wireshark": "37281298",
 }
 
 USED_CODES_FILE = "used_codes.json"
