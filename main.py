@@ -11,7 +11,6 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
-
 CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/export?format=csv"
 
 PLAYERS = {
@@ -42,7 +41,7 @@ def save_used_codes(codes):
         json.dump(list(codes), f)
 
 
-# CSV 코드 가져오기
+# ✅ CSV 코드 가져오기 (이건 그대로 유지 👍)
 def get_active_codes():
     try:
         res = requests.get(CSV_URL, timeout=10)
@@ -62,7 +61,7 @@ def get_active_codes():
         return []
 
 
-# Selenium 설정
+# Selenium
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -80,70 +79,40 @@ def init_driver():
     return driver, wait
 
 
-# 🔥 로그인 (완전 안정 버전)
-def login(driver, wait, pid, name):
-    driver.get(GIFT_URL)
-    time.sleep(5)  # 🔥 중요 (렌더링 대기)
-
-    driver.save_screenshot(f"login_page_{name}.png")
-
-    # 🔥 input 2개 확보
-    inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
-
-    if len(inputs) < 1:
-        raise Exception("input 없음")
-
-    inputs[0].clear()
-    inputs[0].send_keys(pid)
-
-    driver.save_screenshot(f"login_input_{name}.png")
-
-    # 🔥 button 확보
-    buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
-
-    if len(buttons) < 1:
-        raise Exception("button 없음")
-
-    buttons[0].click()
-
-    time.sleep(3)
-
-    driver.save_screenshot(f"login_done_{name}.png")
-
-
-# 🔥 코드 적용 (완전 안정 버전)
-def apply_code(driver, wait, name, code):
+# 🔥 핵심: 로그인 + 코드 적용 합침
+def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
+            driver.get(GIFT_URL)
+            time.sleep(3)
+
+            inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
+
+            # Player ID 입력
+            inputs[0].clear()
+            inputs[0].send_keys(pid)
+
+            buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
+            buttons[0].click()
+
             time.sleep(2)
 
             inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
 
-            if len(inputs) < 2:
-                raise Exception("gift input 없음")
-
+            # Gift Code 입력
             inputs[1].clear()
             inputs[1].send_keys(code)
 
-            driver.save_screenshot(f"code_input_{name}_{code}.png")
-
             buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
-
-            if len(buttons) < 2:
-                raise Exception("confirm 버튼 없음")
-
             buttons[-1].click()
 
             time.sleep(2)
-
-            driver.save_screenshot(f"code_confirm_{name}_{code}.png")
 
             log(f"SUCCESS: {name} / {code}")
             return True
 
         except Exception as e:
             print("ERROR:", e)
-            driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
             random_delay(2, 4)
 
     log(f"FAIL: {name} / {code}")
@@ -165,10 +134,8 @@ def run():
     for name, pid in PLAYERS.items():
         log(f"▶ {name} ({pid})")
 
-        login(driver, wait, pid, name)
-
         for code in codes:
-            success = apply_code(driver, wait, name, code)
+            success = apply_code(driver, wait, pid, name, code)
 
             if success:
                 used_codes.add(code)
