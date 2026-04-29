@@ -82,13 +82,14 @@ def init_driver():
     return driver, wait
 
 
-# 🔥 로그인 (1번만)
+# 로그인 (1번만)
 def login(driver, wait, pid, name):
     driver.get(GIFT_URL)
     time.sleep(3)
 
     driver.save_screenshot(f"login_1_page_{name}.png")
 
+    # Player ID 입력
     player_input = wait.until(
         EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Player")]'))
     )
@@ -97,33 +98,35 @@ def login(driver, wait, pid, name):
 
     driver.save_screenshot(f"login_2_input_{name}.png")
 
+    # 버튼 클릭 (첫 번째 버튼 = Login)
     buttons = wait.until(
-    EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
-)
-
-buttons[0].click()
+        EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
+    )
+    buttons[0].click()
 
     time.sleep(3)
 
     driver.save_screenshot(f"login_3_done_{name}.png")
 
 
-# 🔥 코드 적용 (반복)
+# 코드 적용
 def apply_code(driver, wait, name, code):
     for attempt in range(MAX_RETRY):
         try:
+            # Gift Code 입력
             code_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Enter")]'))
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Gift")]'))
             )
             code_input.clear()
             code_input.send_keys(code)
 
             driver.save_screenshot(f"code_input_{name}_{code}.png")
 
-            confirm_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
+            # Confirm 버튼 클릭 (마지막 버튼)
+            buttons = wait.until(
+                EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
             )
-            confirm_btn.click()
+            buttons[-1].click()
 
             time.sleep(2)
 
@@ -157,10 +160,10 @@ def run():
     for name, pid in PLAYERS.items():
         log(f"▶ {name} ({pid})")
 
-        # 🔥 로그인 1번
+        # 로그인 1번
         login(driver, wait, pid, name)
 
-        # 🔥 코드 반복 적용
+        # 코드 반복 적용
         for code in codes:
             success = apply_code(driver, wait, name, code)
 
