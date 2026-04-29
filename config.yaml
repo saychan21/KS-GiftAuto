@@ -13,4 +13,3 @@ selectors:
   login_button: '//*[@id="loginButton"]'
   gift_code_input: '//*[@id="giftCodeInput"]'
   confirm_button: '//*[@id="confirmButton"]'
-``
