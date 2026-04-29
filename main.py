@@ -65,6 +65,8 @@ def get_active_codes():
 
 
 # Selenium 설정
+from selenium.webdriver.chrome.service import Service
+
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -74,7 +76,12 @@ def init_driver():
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--user-agent=Mozilla/5.0")
 
-    driver = webdriver.Chrome(options=options)
+    # 🔥 GitHub에서 Chrome 위치 지정
+    options.binary_location = "/usr/bin/google-chrome"
+
+    service = Service()
+
+    driver = webdriver.Chrome(service=service, options=options)
     wait = WebDriverWait(driver, 15)
 
     return driver, wait
