@@ -12,8 +12,8 @@ from selenium.webdriver.chrome.options import Options
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 
-# 👉 Google App Scripts(To-Do Sheet)
-GAS_URL = "https://script.google.com/macros/s/AKfycbwtsKZym8FNZMDBlwkMB3cEwAvJhIK3tdgU9AkCTsrF8Wx7RNynE1CVcOqBwVBA6GSV/exec"
+# 🔥 CSV URL 사용 (이걸로 변경)
+CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/export?format=csv"
 
 PLAYERS = {
     "Ethereal": "17770771",
@@ -44,23 +44,23 @@ def save_used_codes(codes):
         json.dump(list(codes), f)
 
 
-# 🔥 GAS에서 코드 가져오기
+# 🔥 CSV에서 코드 가져오기 (핵심 변경)
 def get_active_codes():
     try:
-        res = requests.get(GAS_URL, timeout=10)
+        res = requests.get(CSV_URL, timeout=10)
 
         print("STATUS:", res.status_code)
         print("TEXT:", res.text[:200])
 
-        data = res.json()
-        codes = data.get("codes", [])
+        lines = res.text.splitlines()
+        codes = [line.strip() for line in lines if line.strip()]
 
-        print("GAS 코드:", codes)
+        print("CSV 코드:", codes)
 
         return list(set(codes))
 
     except Exception as e:
-        print("GAS 조회 실패:", e)
+        print("CSV 조회 실패:", e)
         return []
 
 
@@ -80,30 +80,26 @@ def init_driver():
     return driver, wait
 
 
-# 코드 적용 (언어 무관 안정 버전)
+# 코드 적용
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
             driver.get(GIFT_URL)
 
-            # Player ID 입력
             player_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[1]'))
             )
             player_input.clear()
             player_input.send_keys(pid)
 
-            # Login 버튼
             driver.find_element(By.TAG_NAME, "button").click()
 
-            # Gift Code 입력
             code_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[2]'))
             )
             code_input.clear()
             code_input.send_keys(code)
 
-            # Confirm 버튼 (마지막 버튼)
             buttons = driver.find_elements(By.TAG_NAME, "button")
             buttons[-1].click()
 
