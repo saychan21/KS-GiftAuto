@@ -1,48 +1,35 @@
-name: Auto Gift
+name: Auto Gift Bot
 
 on:
   schedule:
-    - cron: "0 */6 * * *"
-  workflow_dispatch:
+    - cron: "0 */12 * * *" # 12시간마다 자동 실행
+  workflow_dispatch: # 수동 실행 버튼 활성화
 
 jobs:
-  run:
+  redeem:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          chrome-version: stable # 특정 버전보다는 stable로 유지
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
           pip install undetected-chromedriver selenium requests
 
-      - name: Run script with Display
-        env:
-          PYTHONUNBUFFERED: "1"
+      - name: Run Bot with XVFB
         run: |
           sudo apt-get update
-          # 필수 라이브러리 및 xvfb 설치
-          sudo apt-get install -y xvfb libgbm-dev libnss3 libatk-bridge2.0-0 libgtk-3-0
-          
-          # xvfb-run을 통해 가상 디스플레이에서 실행
+          sudo apt-get install -y xvfb libgbm-dev
+          # 가상 디스플레이 위에서 실행하여 GUI 브라우저 구동 가능하게 함
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python main.py
 
-      - name: Commit and Push
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Update used_codes.json"
-          file_pattern: 'used_codes.json'
-
-      - name: Upload Artifacts
+      - name: Upload Error Screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: debug-screenshots
+          name: screenshots
           path: "*.png"
