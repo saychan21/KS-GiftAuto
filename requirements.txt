@@ -1,3 +1,5 @@
-undetected-chromedriver
 selenium
-requests
+gspread
+oauth2client
+pyyaml
+``
