@@ -7,7 +7,6 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
@@ -43,7 +42,7 @@ def save_used_codes(codes):
         json.dump(list(codes), f)
 
 
-# CSV에서 코드 가져오기
+# CSV 코드 가져오기
 def get_active_codes():
     try:
         res = requests.get(CSV_URL, timeout=10)
@@ -75,58 +74,65 @@ def init_driver():
     options.binary_location = "/usr/bin/google-chrome"
 
     service = Service()
-
     driver = webdriver.Chrome(service=service, options=options)
-    wait = WebDriverWait(driver, 15)
+    wait = WebDriverWait(driver, 20)
 
     return driver, wait
 
 
-# 🔥 로그인 (1번만)
+# 🔥 로그인 (완전 안정 버전)
 def login(driver, wait, pid, name):
     driver.get(GIFT_URL)
+    time.sleep(5)  # 🔥 중요 (렌더링 대기)
+
+    driver.save_screenshot(f"login_page_{name}.png")
+
+    # 🔥 input 2개 확보
+    inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
+
+    if len(inputs) < 1:
+        raise Exception("input 없음")
+
+    inputs[0].clear()
+    inputs[0].send_keys(pid)
+
+    driver.save_screenshot(f"login_input_{name}.png")
+
+    # 🔥 button 확보
+    buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
+
+    if len(buttons) < 1:
+        raise Exception("button 없음")
+
+    buttons[0].click()
+
     time.sleep(3)
 
-    driver.save_screenshot(f"login_1_page_{name}.png")
-
-    # Player ID 입력
-    player_input = wait.until(
-        EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Player")]'))
-    )
-    player_input.clear()
-    player_input.send_keys(pid)
-
-    driver.save_screenshot(f"login_2_input_{name}.png")
-
-    # 🔥 핵심 수정 (클릭 가능 상태 대기)
-    login_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, '(//button)[1]'))
-    )
-    login_btn.click()
-
-    time.sleep(3)
-
-    driver.save_screenshot(f"login_3_done_{name}.png")
+    driver.save_screenshot(f"login_done_{name}.png")
 
 
-# 🔥 코드 적용
+# 🔥 코드 적용 (완전 안정 버전)
 def apply_code(driver, wait, name, code):
     for attempt in range(MAX_RETRY):
         try:
-            # Gift Code 입력
-            code_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Gift")]'))
-            )
-            code_input.clear()
-            code_input.send_keys(code)
+            time.sleep(2)
+
+            inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
+
+            if len(inputs) < 2:
+                raise Exception("gift input 없음")
+
+            inputs[1].clear()
+            inputs[1].send_keys(code)
 
             driver.save_screenshot(f"code_input_{name}_{code}.png")
 
-            # Confirm 클릭 (마지막 버튼)
-            confirm_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '(//button)[last()]'))
-            )
-            confirm_btn.click()
+            buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
+
+            if len(buttons) < 2:
+                raise Exception("confirm 버튼 없음")
+
+            buttons[-1].click()
 
             time.sleep(2)
 
@@ -144,7 +150,6 @@ def apply_code(driver, wait, name, code):
     return False
 
 
-# 실행
 def run():
     used_codes = load_used_codes()
     new_codes = get_active_codes()
@@ -160,10 +165,8 @@ def run():
     for name, pid in PLAYERS.items():
         log(f"▶ {name} ({pid})")
 
-        # 로그인 1번
         login(driver, wait, pid, name)
 
-        # 코드 반복 적용
         for code in codes:
             success = apply_code(driver, wait, name, code)
 
