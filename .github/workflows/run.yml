@@ -1,18 +1,29 @@
-# config.yaml
-google_sheets:
-  url: "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/edit#gid=561406276"
-  credentials: "service_account.json"
+name: KS Gift Auto
 
-player_ids:
-  - "136432206"
+on:
+  workflow_dispatch:   # 수동 실행 버튼
+  push:
+    branches:
+      - main
 
-selenium:
-  driver: "chrome"
-  wait_time: 2
-  url: "https://ks-giftcode.centurygame.com"
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
 
-selectors:
-  player_id_input: '//*[@id="playerIdInput"]'
-  login_button: '//*[@id="loginButton"]'
-  gift_code_input: '//*[@id="giftCodeInput"]'
-  confirm_button: '//*[@id="confirmButton"]'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run script
+        run: |
+          python main.py
