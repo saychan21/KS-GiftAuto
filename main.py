@@ -13,7 +13,7 @@ from selenium.webdriver.chrome.options import Options
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 
 # 👉 네가 준 URL 그대로 사용
-GAS_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnRFIlOTyVJdSJ3kV55CMwfxhQCW3nNHfdSkSasfJ2Xz_5oL7pRS0JeHWO1oh0CsHMjLtODILOPLiQcIwcD3WXlg5d0tHhM2bUbkeTIdcp7gO4zCS_3fnQrgAthAS2cyxx7AkhJ47W6ZO2HH7FyY3E5GO9mVnCQB_MeSRsSu7ccXxoVAVfJORaJ6OlyoLLFno4hp3UOS2tlT0R19eoz5j0HODGeghGxEjqqrW7l3ynvjsG2ltlroyq_C0lu6yaUHZnMK3Lbigc9KZbr5LwtI0U_D-O8Dxw&lib=MQkbhZZh0RrYm1c-ORko8Rg8sAQHp0EVj"
+GAS_URL = "https://script.google.com/macros/s/AKfycbwtsKZym8FNZMDBlwkMB3cEwAvJhIK3tdgU9AkCTsrF8Wx7RNynE1CVcOqBwVBA6GSV/exec"
 
 PLAYERS = {
     "Ethereal": "17770771",
