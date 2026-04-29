@@ -48,11 +48,25 @@ def save_used_codes(codes):
 
 def get_active_codes():
     try:
-        res = requests.get(GIFT_API_URL, timeout=10)
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Accept": "application/json"
+        }
+
+        res = requests.get(GIFT_API_URL, headers=headers, timeout=10)
+
+        print("STATUS:", res.status_code)
+        print("TEXT:", res.text[:200])
+
         data = res.json()
-        return list(set([c["code"] for c in data["data"]["giftCodes"] if not c.get("expired", False)]))
+
+        return list(set([
+            c["code"] for c in data["data"]["giftCodes"]
+            if not c.get("expired", False)
+        ]))
+
     except Exception as e:
-        log(f"코드 조회 실패: {e}")
+        print("코드 조회 실패:", e)
         return []
 
 
