@@ -18,6 +18,15 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfi
 # 🔥 Player 직접 입력
 PLAYERS = [
     {"name": "Wireshark", "id": "37281298"},
+    {"name": "Infinity", "id": "136432206"},
+    {"name": "Ethereal", "id": "17770771"},
+    {"name": "ririshark", "id": "53048346"},
+    {"name": "riri", "id": "17836868"},
+    {"name": "Big Mike", "id": "18459308"},
+    {"name": "2nd", "id": "17377991"},
+    {"name": "아무하지", "id": "19032562"},
+    {"name": "ETMAN", "id": "17344803"},
+    {"name": "[YNV]Lancelot", "id": "17410235"},
 ]
 
 USED_CODES_FILE = "used_codes.json"
@@ -75,7 +84,10 @@ def apply_code(driver, wait, pid, name, code):
             driver.get(GIFT_URL)
             time.sleep(3)
 
-            # Player ID 입력 (사람처럼 타이핑)
+            # 🔥 무조건 스크린샷 (항상 생성)
+            driver.save_screenshot(f"always_{name}_{code}.png")
+
+            # Player ID 입력
             player_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '//input'))
             )
@@ -101,7 +113,7 @@ def apply_code(driver, wait, pid, name, code):
 
             random_delay()
 
-            # Gift Code 입력 (사람처럼 타이핑)
+            # Gift Code 입력
             code_input.click()
             code_input.clear()
 
@@ -119,6 +131,7 @@ def apply_code(driver, wait, pid, name, code):
             return True
 
         except:
+            driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
             log(f"RETRY {attempt+1}/{MAX_RETRY}: {name} / {code}")
             time.sleep(2)
 
