@@ -12,7 +12,7 @@ from selenium.webdriver.chrome.options import Options
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 
-# 👉 네가 준 URL 그대로 사용
+# 👉 Google App Scripts(To-Do Sheet)
 GAS_URL = "https://script.google.com/macros/s/AKfycbwtsKZym8FNZMDBlwkMB3cEwAvJhIK3tdgU9AkCTsrF8Wx7RNynE1CVcOqBwVBA6GSV/exec"
 
 PLAYERS = {
