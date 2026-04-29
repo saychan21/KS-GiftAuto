@@ -4,9 +4,7 @@ google_sheets:
   credentials: "service_account.json"
 
 player_ids:
-  - "123456789"
-  - "987654321"
-  - "555555555"
+  - "136432206"
 
 selenium:
   driver: "chrome"
