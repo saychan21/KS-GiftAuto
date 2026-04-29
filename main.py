@@ -10,9 +10,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 
-# -----------------------------
-# 1. YAML 설정 불러오기
-# -----------------------------
+# 1. Load config
 with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
@@ -21,9 +19,7 @@ player_ids = config["player_ids"]
 selectors = config["selectors"]
 selenium_conf = config["selenium"]
 
-# -----------------------------
-# 2. 공개 Google Sheets CSV 읽기
-# -----------------------------
+# 2. Load Gift Codes from public Google Sheets (CSV)
 response = requests.get(csv_url, timeout=30)
 response.raise_for_status()
 
@@ -36,9 +32,7 @@ gift_codes = [
 
 print(f"✅ Gift Code {len(gift_codes)}개 로드 완료")
 
-# -----------------------------
-# 3. Headless Chrome 설정
-# -----------------------------
+# 3. Chrome setup (Headless + UA)
 chrome_options = Options()
 chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
@@ -51,57 +45,25 @@ chrome_options.add_argument(
 )
 
 driver = webdriver.Chrome(options=chrome_options)
-wait = WebDriverWait(driver, 20)
+wait = WebDriverWait(driver, 30)
 
 driver.get(selenium_conf["url"])
-
-# ✅ 페이지 완전 로드 대기 (중요)
 wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
 time.sleep(5)
 
-# -----------------------------
-# 4. 자동화 실행
-# -----------------------------
+# 4. Automation
 for pid in player_ids:
     print(f"▶ Player ID: {pid}")
 
     player_id_box = wait.until(
-        EC.element_to_be_clickable(
-            (By.XPATH, selectors["player_id_input"])
-        )
+        EC.element_to_be_clickable((By.XPATH, selectors["player_id_input"]))
     )
     player_id_box.clear()
     player_id_box.send_keys(pid)
 
     login_button = wait.until(
-        EC.element_to_be_clickable(
-            (By.XPATH, selectors["login_button"])
-        )
+        EC.element_to_be_clickable((By.XPATH, selectors["login_button"]))
     )
     login_button.click()
-    time.sleep(selenium_conf["wait_time"])
 
-    for code in gift_codes:
-        try:
-            gift_code_box = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, selectors["gift_code_input"])
-                )
-            )
-            gift_code_box.clear()
-            gift_code_box.send_keys(code)
-
-            confirm_button = wait.until(
-                EC.element_to_be_clickable(
-                    (By.XPATH, selectors["confirm_button"])
-                )
-            )
-            confirm_button.click()
-
-            print(f"✅ 시도: {code}")
-            time.sleep(selenium_conf["wait_time"])
-
-        except Exception as e:
-            print(f"❌ 실패: {code} / {e}")
-
-driver.quit()
+    # wait for iframe after login
