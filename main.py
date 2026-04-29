@@ -1,163 +1,59 @@
 import time
-import json
-import os
-import random
-import requests
-
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
-GIFT_URL = "https://ks-giftcode.centurygame.com/"
-CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/export?format=csv"
+# -----------------------------
+# 1. Google Sheets 연결
+# -----------------------------
+scope = ["https://spreadsheets.google.com/feeds",
+         "https://www.googleapis.com/auth/drive"]
 
-# 🔥 Player 직접 입력
-PLAYERS = [
-    {"name": "Wireshark", "id": "37281298"},
-]
+# service_account.json 파일 필요 (Google Cloud에서 발급)
+creds = ServiceAccountCredentials.from_json_keyfile_name("service_account.json", scope)
+client = gspread.authorize(creds)
 
-USED_CODES_FILE = "used_codes.json"
-MAX_RETRY = 3
+# 시트 열기
+sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/edit#gid=561406276")
+worksheet = sheet.get_worksheet(0)
 
+# Gift Code 리스트 가져오기 (A열)
+gift_codes = worksheet.col_values(1)
 
-def log(msg):
-    print(msg, flush=True)
+# -----------------------------
+# 2. Player ID 리스트 (여러 개)
+# -----------------------------
+player_ids = ["123456789", "987654321", "555555555"]
 
+# -----------------------------
+# 3. Selenium 브라우저 실행
+# -----------------------------
+driver = webdriver.Chrome()
+driver.get("https://ks-giftcode.centurygame.com")
 
-def random_delay(a=1.0, b=2.0):
-    time.sleep(random.uniform(a, b))
+# -----------------------------
+# 4. 자동화 루프
+# -----------------------------
+for pid in player_ids:
+    # Player ID 입력
+    player_id_box = driver.find_element(By.XPATH, '//*[@id="playerIdInput"]')
+    player_id_box.clear()
+    player_id_box.send_keys(pid)
 
+    login_button = driver.find_element(By.XPATH, '//*[@id="loginButton"]')
+    login_button.click()
+    time.sleep(2)
 
-def load_used_codes():
-    if os.path.exists(USED_CODES_FILE):
-        with open(USED_CODES_FILE, "r") as f:
-            return set(json.load(f))
-    return set()
+    # Gift Code 입력 반복
+    for code in gift_codes:
+        gift_code_box = driver.find_element(By.XPATH, '//*[@id="giftCodeInput"]')
+        gift_code_box.clear()
+        gift_code_box.send_keys(code)
 
+        confirm_button = driver.find_element(By.XPATH, '//*[@id="confirmButton"]')
+        confirm_button.click()
+        time.sleep(2)
 
-def save_used_codes(codes):
-    with open(USED_CODES_FILE, "w") as f:
-        json.dump(list(codes), f)
-
-
-def get_active_codes():
-    try:
-        res = requests.get(CSV_URL, timeout=10)
-        lines = res.text.splitlines()
-        codes = [line.strip() for line in lines if line.strip()]
-        log(f"코드: {codes}")
-        return list(set(codes))
-    except:
-        log("CSV 조회 실패")
-        return []
-
-
-def init_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-
-    wait = WebDriverWait(driver, 20)
-    return driver, wait
-
-
-def apply_code(driver, wait, pid, name, code):
-    for attempt in range(MAX_RETRY):
-        try:
-            driver.get(GIFT_URL)
-            time.sleep(3)
-
-            # 🔥 무조건 스크린샷 (항상 생성)
-            driver.save_screenshot(f"always_{name}_{code}.png")
-
-            # Player ID 입력
-            player_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//input'))
-            )
-            player_input.click()
-            player_input.clear()
-
-            for c in pid:
-                player_input.send_keys(c)
-                time.sleep(0.05)
-
-            random_delay()
-
-            # Login 클릭
-            login_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
-            )
-            ActionChains(driver).move_to_element(login_btn).click().perform()
-
-            # Gift input 대기
-            code_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '(//input)[2]'))
-            )
-
-            random_delay()
-
-            # Gift Code 입력
-            code_input.click()
-            code_input.clear()
-
-            for c in code:
-                code_input.send_keys(c)
-                time.sleep(0.05)
-
-            # Confirm 클릭
-            confirm_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
-            )
-            ActionChains(driver).move_to_element(confirm_btn).click().perform()
-
-            log(f"SUCCESS: {name} ({pid}) / {code}")
-            return True
-
-        except:
-            driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
-            log(f"RETRY {attempt+1}/{MAX_RETRY}: {name} / {code}")
-            time.sleep(2)
-
-    log(f"FAIL: {name} ({pid}) / {code}")
-    return False
-
-
-def run():
-    used_codes = load_used_codes()
-    new_codes = get_active_codes()
-
-    codes = [c for c in new_codes if c not in used_codes]
-
-    if not codes:
-        log("신규 코드 없음")
-        return
-
-    driver, wait = init_driver()
-
-    for p in PLAYERS:
-        log(f"▶ {p['name']} ({p['id']})")
-
-        for code in codes:
-            success = apply_code(driver, wait, p["id"], p["name"], code)
-
-            if success:
-                used_codes.add(code)
-
-            random_delay()
-
-    driver.quit()
-    save_used_codes(used_codes)
-
-    log("DONE")
-
-
-if __name__ == "__main__":
-    run()
+print("✅ 모든 Player ID와 Gift Code 자동 입력 완료")
+driver.quit()
