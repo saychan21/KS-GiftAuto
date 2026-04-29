@@ -12,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🔥 Chrome 자동 설치 (핵심)
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
 
@@ -25,3 +24,10 @@ jobs:
 
       - name: Run script
         run: python main.py
+
+      # 🔥 여기 위치가 중요 (steps 안!)
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: "*.png"
