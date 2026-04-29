@@ -8,7 +8,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    permissions: # 파일 커밋을 위한 권한 추가
+    permissions:
       contents: write
 
     steps:
@@ -16,31 +16,33 @@ jobs:
 
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
-
-      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          chrome-version: stable # 특정 버전보다는 stable로 유지
 
       - name: Install dependencies
         run: |
           pip install undetected-chromedriver selenium requests
 
-      - name: Run script with display
+      - name: Run script with Display
+        env:
+          PYTHONUNBUFFERED: "1"
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb
+          # 필수 라이브러리 및 xvfb 설치
+          sudo apt-get install -y xvfb libgbm-dev libnss3 libatk-bridge2.0-0 libgtk-3-0
+          
+          # xvfb-run을 통해 가상 디스플레이에서 실행
           xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python main.py
 
-      # 변경된 used_codes.json을 레포지토리에 저장
-      - name: Commit and Push changes
+      - name: Commit and Push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Update used_codes.json [skip ci]"
+          commit_message: "Update used_codes.json"
           file_pattern: 'used_codes.json'
 
-      - name: Upload screenshots
-        if: always() # 실패해도 스크린샷 업로드
+      - name: Upload Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshots
+          name: debug-screenshots
           path: "*.png"
