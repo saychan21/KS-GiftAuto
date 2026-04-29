@@ -12,8 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 🔥 Chrome 설치
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
+
+      # 🔥 Chrome 버전 확인 (중요)
+      - name: Check Chrome version
+        run: google-chrome --version
 
       - uses: actions/setup-python@v5
         with:
@@ -25,7 +30,7 @@ jobs:
       - name: Run script
         run: python main.py
 
-      # 🔥 여기 위치가 중요 (steps 안!)
+      # 🔥 스크린샷 업로드
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
