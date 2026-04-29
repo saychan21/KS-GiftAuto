@@ -22,13 +22,12 @@ selectors = config["selectors"]
 selenium_conf = config["selenium"]
 
 # -----------------------------
-# 2. 공개 Google Sheets CSV 읽기 ✅
+# 2. 공개 Google Sheets CSV 읽기
 # -----------------------------
-response = requests.get(csv_url)
+response = requests.get(csv_url, timeout=30)
 response.raise_for_status()
 
 csv_data = csv.reader(StringIO(response.text))
-
 gift_codes = [
     row[0].strip()
     for row in csv_data
@@ -38,42 +37,67 @@ gift_codes = [
 print(f"✅ Gift Code {len(gift_codes)}개 로드 완료")
 
 # -----------------------------
-# 3. Headless Chrome
+# 3. Headless Chrome 설정
 # -----------------------------
 chrome_options = Options()
 chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--window-size=1920,1080")
+chrome_options.add_argument(
+    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/122.0.0.0 Safari/537.36"
+)
 
 driver = webdriver.Chrome(options=chrome_options)
-wait = WebDriverWait(driver, 10)
+wait = WebDriverWait(driver, 20)
+
 driver.get(selenium_conf["url"])
 
+# ✅ 페이지 완전 로드 대기 (중요)
+wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
+time.sleep(5)
+
 # -----------------------------
-# 4. 자동화
+# 4. 자동화 실행
 # -----------------------------
 for pid in player_ids:
     print(f"▶ Player ID: {pid}")
 
     player_id_box = wait.until(
-        EC.presence_of_element_located((By.XPATH, selectors["player_id_input"]))
+        EC.element_to_be_clickable(
+            (By.XPATH, selectors["player_id_input"])
+        )
     )
     player_id_box.clear()
     player_id_box.send_keys(pid)
 
-    driver.find_element(By.XPATH, selectors["login_button"]).click()
+    login_button = wait.until(
+        EC.element_to_be_clickable(
+            (By.XPATH, selectors["login_button"])
+        )
+    )
+    login_button.click()
     time.sleep(selenium_conf["wait_time"])
 
     for code in gift_codes:
         try:
             gift_code_box = wait.until(
-                EC.presence_of_element_located((By.XPATH, selectors["gift_code_input"]))
+                EC.element_to_be_clickable(
+                    (By.XPATH, selectors["gift_code_input"])
+                )
             )
             gift_code_box.clear()
             gift_code_box.send_keys(code)
 
-            driver.find_element(By.XPATH, selectors["confirm_button"]).click()
+            confirm_button = wait.until(
+                EC.element_to_be_clickable(
+                    (By.XPATH, selectors["confirm_button"])
+                )
+            )
+            confirm_button.click()
+
             print(f"✅ 시도: {code}")
             time.sleep(selenium_conf["wait_time"])
 
@@ -81,3 +105,4 @@ for pid in player_ids:
             print(f"❌ 실패: {code} / {e}")
 
 driver.quit()
+``
