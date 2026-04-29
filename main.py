@@ -3,6 +3,7 @@ import json
 import os
 import random
 import requests
+import re
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -10,7 +11,6 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 
-GIFT_API_URL = "https://kingshot.net/api/gift-codes"
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 
 # =========================
@@ -33,6 +33,9 @@ def random_delay(a=1.5, b=3.5):
     time.sleep(random.uniform(a, b))
 
 
+# =========================
+# 중복 코드 관리
+# =========================
 def load_used_codes():
     if os.path.exists(USED_CODES_FILE):
         with open(USED_CODES_FILE, "r") as f:
@@ -45,30 +48,47 @@ def save_used_codes(codes):
         json.dump(list(codes), f)
 
 
+# =========================
+# 🔥 HTML 파싱 방식 (핵심)
+# =========================
 def get_active_codes():
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Accept": "application/json"
+            "User-Agent": "Mozilla/5.0"
         }
 
-        res = requests.get(GIFT_API_URL, headers=headers, timeout=10)
+        url = "https://kingshot.net/gift-codes"
+        res = requests.get(url, headers=headers, timeout=10)
 
         print("STATUS:", res.status_code)
-        print("TEXT:", res.text[:200])
 
-        data = res.json()
+        html = res.text
 
-        return list(set([
-            c["code"] for c in data["data"]["giftCodes"]
-            if not c.get("expired", False)
-        ]))
+        match = re.search(r"Active Gift Codes([\s\S]*?)Expired Gift Codes", html)
+        if not match:
+            print("Active 코드 영역 못 찾음")
+            return []
+
+        active_section = match.group(1)
+
+        raw_codes = re.findall(r"\b[A-Z0-9]{6,16}\b", active_section)
+
+        blacklist = {"COPY", "CODE", "REDEEM", "NOW", "SHARE", "LINK", "ACTIVE"}
+
+        codes = list(set([c for c in raw_codes if c not in blacklist]))
+
+        print("추출된 코드:", codes)
+
+        return codes
 
     except Exception as e:
-        print("코드 조회 실패:", e)
+        print("코드 파싱 실패:", e)
         return []
 
 
+# =========================
+# Selenium 설정
+# =========================
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -85,6 +105,9 @@ def init_driver():
     return driver, wait
 
 
+# =========================
+# 코드 적용
+# =========================
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
@@ -117,6 +140,9 @@ def apply_code(driver, wait, pid, name, code):
     return False
 
 
+# =========================
+# 실행
+# =========================
 def run():
     used_codes = load_used_codes()
     new_codes = get_active_codes()
