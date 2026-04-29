@@ -82,7 +82,7 @@ def init_driver():
     return driver, wait
 
 
-# 로그인 (1번만)
+# 🔥 로그인 (1번만)
 def login(driver, wait, pid, name):
     driver.get(GIFT_URL)
     time.sleep(3)
@@ -98,18 +98,18 @@ def login(driver, wait, pid, name):
 
     driver.save_screenshot(f"login_2_input_{name}.png")
 
-    # 버튼 클릭 (첫 번째 버튼 = Login)
-    buttons = wait.until(
-        EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
+    # 🔥 핵심 수정 (클릭 가능 상태 대기)
+    login_btn = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '(//button)[1]'))
     )
-    buttons[0].click()
+    login_btn.click()
 
     time.sleep(3)
 
     driver.save_screenshot(f"login_3_done_{name}.png")
 
 
-# 코드 적용
+# 🔥 코드 적용
 def apply_code(driver, wait, name, code):
     for attempt in range(MAX_RETRY):
         try:
@@ -122,11 +122,11 @@ def apply_code(driver, wait, name, code):
 
             driver.save_screenshot(f"code_input_{name}_{code}.png")
 
-            # Confirm 버튼 클릭 (마지막 버튼)
-            buttons = wait.until(
-                EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
+            # Confirm 클릭 (마지막 버튼)
+            confirm_btn = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '(//button)[last()]'))
             )
-            buttons[-1].click()
+            confirm_btn.click()
 
             time.sleep(2)
 
