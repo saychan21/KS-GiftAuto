@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support import expected_conditions as EC
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/export?format=csv"
@@ -69,9 +70,7 @@ def get_active_codes():
 def init_driver():
     options = Options()
 
-    # ⚠️ 일부러 headless 유지 (현 상태 확인용)
     options.add_argument("--headless=new")
-
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
@@ -88,7 +87,7 @@ def init_driver():
 
 
 # =============================
-# 🔥 핵심 (스크린샷 디버그 포함)
+# 🔥 핵심 (수정 완료 버전)
 # =============================
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
@@ -96,13 +95,9 @@ def apply_code(driver, wait, pid, name, code):
             driver.get(GIFT_URL)
             time.sleep(3)
 
-            # 🔥 STEP 1
             driver.save_screenshot(f"step1_page_{name}_{code}.png")
 
             inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
-
-            # 🔥 STEP 2
-            driver.save_screenshot(f"step2_inputs_{name}_{code}.png")
 
             if len(inputs) < 1:
                 raise Exception("input 없음")
@@ -110,15 +105,13 @@ def apply_code(driver, wait, pid, name, code):
             inputs[0].clear()
             inputs[0].send_keys(pid)
 
-            buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
+            driver.save_screenshot(f"step2_input_{name}_{code}.png")
 
-            # 🔥 STEP 3
-            driver.save_screenshot(f"step3_buttons_{name}_{code}.png")
-
-            if len(buttons) < 1:
-                raise Exception("button 없음")
-
-            buttons[0].click()
+            # 🔥 핵심 수정 (Login 버튼 정확히 클릭)
+            login_btn = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
+            )
+            driver.execute_script("arguments[0].click();", login_btn)
 
             time.sleep(2)
 
@@ -130,30 +123,24 @@ def apply_code(driver, wait, pid, name, code):
             inputs[1].clear()
             inputs[1].send_keys(code)
 
-            # 🔥 STEP 4
-            driver.save_screenshot(f"step4_code_{name}_{code}.png")
+            driver.save_screenshot(f"step3_code_{name}_{code}.png")
 
-            buttons = wait.until(lambda d: d.find_elements(By.TAG_NAME, "button"))
-
-            if len(buttons) < 2:
-                raise Exception("confirm 버튼 없음")
-
-            buttons[-1].click()
+            # 🔥 Confirm 버튼도 동일하게 안정화
+            confirm_btn = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
+            )
+            driver.execute_script("arguments[0].click();", confirm_btn)
 
             time.sleep(2)
 
-            # 🔥 STEP 5
-            driver.save_screenshot(f"step5_done_{name}_{code}.png")
+            driver.save_screenshot(f"step4_done_{name}_{code}.png")
 
             log(f"SUCCESS: {name} / {code}")
             return True
 
         except Exception as e:
             print("ERROR:", e)
-
-            # 🔥 에러 캡처
             driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
-
             random_delay(2, 4)
 
     log(f"FAIL: {name} / {code}")
@@ -190,6 +177,7 @@ def run():
     save_used_codes(used_codes)
 
     log("=== DONE ===")
+
 
 if __name__ == "__main__":
     run()
