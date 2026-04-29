@@ -93,7 +93,7 @@ def apply_code(driver, wait, pid, name, code):
         try:
             driver.get(GIFT_URL)
 
-            # 👉 페이지 로딩 대기 (핵심)
+            # 로딩 안정화
             time.sleep(3)
 
             # Player ID 입력
@@ -103,24 +103,28 @@ def apply_code(driver, wait, pid, name, code):
             player_input.clear()
             player_input.send_keys(pid)
 
-            # 👉 Login 버튼 (명확하게 찾기)
-            login_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
+            # 버튼 전체 가져오기
+            buttons = wait.until(
+                EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
             )
-            login_btn.click()
 
-            # 👉 코드 입력창 대기
+            # Login 클릭 (첫 번째 버튼)
+            buttons[0].click()
+
+            # 코드 입력
             code_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[2]'))
             )
             code_input.clear()
             code_input.send_keys(code)
 
-            # 👉 Confirm 버튼 (명확하게 찾기)
-            confirm_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
+            # 버튼 다시 가져오기 (DOM 변화 대응)
+            buttons = wait.until(
+                EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
             )
-            confirm_btn.click()
+
+            # Confirm 클릭 (마지막 버튼)
+            buttons[-1].click()
 
             log(f"SUCCESS: {name} ({pid}) / {code}")
             return True
