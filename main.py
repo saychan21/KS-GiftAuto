@@ -105,4 +105,3 @@ for pid in player_ids:
             print(f"❌ 실패: {code} / {e}")
 
 driver.quit()
-``
