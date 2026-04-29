@@ -191,5 +191,5 @@ def run():
 
     log("=== DONE ===")
 
-
-if __name__ == "__
+if __name__ == "__main__":
+    run()
