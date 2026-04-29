@@ -17,7 +17,6 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfi
 
 PLAYERS = {
     "Ethereal": "17770771",
-    "Wireshark": "37281298",
 }
 
 USED_CODES_FILE = "used_codes.json"
