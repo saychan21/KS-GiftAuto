@@ -54,7 +54,6 @@ def get_active_codes():
         return []
 
 
-# 🔥 핵심: 버전 맞춤
 def init_driver():
     options = uc.ChromeOptions()
     options.add_argument("--no-sandbox")
@@ -63,19 +62,21 @@ def init_driver():
     driver = uc.Chrome(
         options=options,
         headless=True,
-        version_main=147  # 🔥 이거 핵심
+        version_main=147
     )
 
     wait = WebDriverWait(driver, 20)
     return driver, wait
 
 
-# 🔥 핵심: 사람처럼 클릭
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
             driver.get(GIFT_URL)
             time.sleep(3)
+
+            # 🔥 STEP0: 무조건 스크린샷
+            driver.save_screenshot(f"step0_{name}_{code}.png")
 
             # Player ID 입력
             player_input = wait.until(
@@ -86,9 +87,9 @@ def apply_code(driver, wait, pid, name, code):
 
             random_delay()
 
-            # Login 클릭
+            # 🔥 Login 버튼 정확하게 찾기
             login_btn = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//button'))
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
             )
 
             ActionChains(driver).move_to_element(login_btn).click().perform()
@@ -104,8 +105,9 @@ def apply_code(driver, wait, pid, name, code):
             code_input.clear()
             code_input.send_keys(code)
 
+            # 🔥 Confirm 버튼 정확하게
             confirm_btn = wait.until(
-                EC.presence_of_element_located((By.XPATH, '(//button)[last()]'))
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
             )
 
             ActionChains(driver).move_to_element(confirm_btn).click().perform()
@@ -114,6 +116,9 @@ def apply_code(driver, wait, pid, name, code):
             return True
 
         except:
+            # 🔥 에러 스크린샷
+            driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
+
             log(f"RETRY {attempt+1}/{MAX_RETRY}: {name} / {code}")
             time.sleep(2)
 
