@@ -61,7 +61,7 @@ def init_driver():
 
     driver = uc.Chrome(
         options=options,
-        headless=False,   # 🔥 여기만 수정됨
+        headless=False,
         version_main=147
     )
 
@@ -75,37 +75,41 @@ def apply_code(driver, wait, pid, name, code):
             driver.get(GIFT_URL)
             time.sleep(3)
 
-            # 🔥 STEP0: 무조건 스크린샷
             driver.save_screenshot(f"step0_{name}_{code}.png")
 
-            # Player ID 입력
+            # Player ID 입력 (🔥 핵심 수정)
             player_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '//input'))
             )
-            player_input.clear()
-            player_input.send_keys(pid)
+
+            driver.execute_script("""
+                arguments[0].value = arguments[1];
+                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+            """, player_input, pid)
 
             random_delay()
 
-            # 🔥 Login 버튼 정확하게 찾기
             login_btn = wait.until(
                 EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
             )
 
             ActionChains(driver).move_to_element(login_btn).click().perform()
 
-            # 로그인 후 Gift input 등장 대기
+            # Gift input 대기
             code_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input)[2]'))
             )
 
             random_delay()
 
-            # Gift Code 입력
-            code_input.clear()
-            code_input.send_keys(code)
+            # Gift Code 입력 (🔥 핵심 수정)
+            driver.execute_script("""
+                arguments[0].value = arguments[1];
+                arguments[0].dispatchEvent(new Event('input', { bubbles: true }));
+                arguments[0].dispatchEvent(new Event('change', { bubbles: true }));
+            """, code_input, code)
 
-            # 🔥 Confirm 버튼 정확하게
             confirm_btn = wait.until(
                 EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
             )
@@ -116,9 +120,7 @@ def apply_code(driver, wait, pid, name, code):
             return True
 
         except:
-            # 🔥 에러 스크린샷
             driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
-
             log(f"RETRY {attempt+1}/{MAX_RETRY}: {name} / {code}")
             time.sleep(2)
 
