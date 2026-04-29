@@ -50,22 +50,27 @@ def get_active_codes():
         log(f"코드: {codes}")
         return list(set(codes))
     except:
+        log("CSV 조회 실패")
         return []
 
 
-# 🔥 핵심: 사람처럼 브라우저 생성
+# 🔥 핵심: 버전 맞춤
 def init_driver():
     options = uc.ChromeOptions()
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
-    driver = uc.Chrome(options=options, headless=True)
-    wait = WebDriverWait(driver, 20)
+    driver = uc.Chrome(
+        options=options,
+        headless=True,
+        version_main=147  # 🔥 이거 핵심
+    )
 
+    wait = WebDriverWait(driver, 20)
     return driver, wait
 
 
-# 🔥 핵심 로직 (진짜 클릭)
+# 🔥 핵심: 사람처럼 클릭
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
@@ -81,14 +86,14 @@ def apply_code(driver, wait, pid, name, code):
 
             random_delay()
 
-            # 🔥 진짜 클릭 (ActionChains)
+            # Login 클릭
             login_btn = wait.until(
                 EC.presence_of_element_located((By.XPATH, '//button'))
             )
 
             ActionChains(driver).move_to_element(login_btn).click().perform()
 
-            # 로그인 성공 대기
+            # 로그인 후 Gift input 등장 대기
             code_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input)[2]'))
             )
@@ -109,7 +114,7 @@ def apply_code(driver, wait, pid, name, code):
             return True
 
         except:
-            log(f"RETRY {attempt+1}: {name} / {code}")
+            log(f"RETRY {attempt+1}/{MAX_RETRY}: {name} / {code}")
             time.sleep(2)
 
     log(f"FAIL: {name} / {code}")
