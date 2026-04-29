@@ -9,10 +9,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 
-# 🔥 CSV URL 사용 (이걸로 변경)
 CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/export?format=csv"
 
 PLAYERS = {
@@ -43,7 +43,7 @@ def save_used_codes(codes):
         json.dump(list(codes), f)
 
 
-# 🔥 CSV에서 코드 가져오기 (핵심 변경)
+# CSV에서 코드 가져오기
 def get_active_codes():
     try:
         res = requests.get(CSV_URL, timeout=10)
@@ -64,8 +64,6 @@ def get_active_codes():
 
 
 # Selenium 설정
-from selenium.webdriver.chrome.service import Service
-
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -74,8 +72,6 @@ def init_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--user-agent=Mozilla/5.0")
-
-    # 🔥 GitHub에서 Chrome 위치 지정
     options.binary_location = "/usr/bin/google-chrome"
 
     service = Service()
@@ -86,49 +82,53 @@ def init_driver():
     return driver, wait
 
 
-# 코드 적용
-def apply_code(driver, wait, pid, name, code):
+# 🔥 로그인 (1번만)
+def login(driver, wait, pid, name):
+    driver.get(GIFT_URL)
+    time.sleep(3)
+
+    driver.save_screenshot(f"login_1_page_{name}.png")
+
+    player_input = wait.until(
+        EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Player")]'))
+    )
+    player_input.clear()
+    player_input.send_keys(pid)
+
+    driver.save_screenshot(f"login_2_input_{name}.png")
+
+    login_btn = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
+    )
+    login_btn.click()
+
+    time.sleep(3)
+
+    driver.save_screenshot(f"login_3_done_{name}.png")
+
+
+# 🔥 코드 적용 (반복)
+def apply_code(driver, wait, name, code):
     for attempt in range(MAX_RETRY):
         try:
-            driver.get(GIFT_URL)
-            time.sleep(3)
-
-            driver.save_screenshot(f"step1_page_{name}_{code}.png")
-
-            # Player ID 입력
-            player_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[1]'))
-            )
-            player_input.send_keys(pid)
-
-            driver.save_screenshot(f"step2_id_{name}_{code}.png")
-
-            # 버튼 클릭
-            buttons = wait.until(
-                EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
-            )
-            buttons[0].click()
-
-            time.sleep(2)
-            driver.save_screenshot(f"step3_login_{name}_{code}.png")
-
-            # 코드 입력
             code_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[2]'))
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Enter")]'))
             )
+            code_input.clear()
             code_input.send_keys(code)
 
-            driver.save_screenshot(f"step4_code_{name}_{code}.png")
+            driver.save_screenshot(f"code_input_{name}_{code}.png")
 
-            buttons = wait.until(
-                EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
+            confirm_btn = wait.until(
+                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
             )
-            buttons[-1].click()
+            confirm_btn.click()
 
             time.sleep(2)
-            driver.save_screenshot(f"step5_confirm_{name}_{code}.png")
 
-            log(f"SUCCESS: {name} ({pid}) / {code}")
+            driver.save_screenshot(f"code_confirm_{name}_{code}.png")
+
+            log(f"SUCCESS: {name} / {code}")
             return True
 
         except Exception as e:
@@ -136,10 +136,11 @@ def apply_code(driver, wait, pid, name, code):
             driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
             random_delay(2, 4)
 
-    log(f"FAIL: {name} ({pid}) / {code}")
+    log(f"FAIL: {name} / {code}")
     return False
 
 
+# 실행
 def run():
     used_codes = load_used_codes()
     new_codes = get_active_codes()
@@ -155,8 +156,12 @@ def run():
     for name, pid in PLAYERS.items():
         log(f"▶ {name} ({pid})")
 
+        # 🔥 로그인 1번
+        login(driver, wait, pid, name)
+
+        # 🔥 코드 반복 적용
         for code in codes:
-            success = apply_code(driver, wait, pid, name, code)
+            success = apply_code(driver, wait, name, code)
 
             if success:
                 used_codes.add(code)
