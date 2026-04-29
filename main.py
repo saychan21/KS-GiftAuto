@@ -92,45 +92,49 @@ def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
             driver.get(GIFT_URL)
-
-            # 로딩 안정화
             time.sleep(3)
+
+            driver.save_screenshot(f"step1_page_{name}_{code}.png")
 
             # Player ID 입력
             player_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[1]'))
             )
-            player_input.clear()
             player_input.send_keys(pid)
 
-            # 버튼 전체 가져오기
+            driver.save_screenshot(f"step2_id_{name}_{code}.png")
+
+            # 버튼 클릭
             buttons = wait.until(
                 EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
             )
-
-            # Login 클릭 (첫 번째 버튼)
             buttons[0].click()
+
+            time.sleep(2)
+            driver.save_screenshot(f"step3_login_{name}_{code}.png")
 
             # 코드 입력
             code_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[2]'))
             )
-            code_input.clear()
             code_input.send_keys(code)
 
-            # 버튼 다시 가져오기 (DOM 변화 대응)
+            driver.save_screenshot(f"step4_code_{name}_{code}.png")
+
             buttons = wait.until(
                 EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
             )
-
-            # Confirm 클릭 (마지막 버튼)
             buttons[-1].click()
+
+            time.sleep(2)
+            driver.save_screenshot(f"step5_confirm_{name}_{code}.png")
 
             log(f"SUCCESS: {name} ({pid}) / {code}")
             return True
 
         except Exception as e:
-            log(f"RETRY {attempt+1}/{MAX_RETRY}: {code} / {e}")
+            print("ERROR:", e)
+            driver.save_screenshot(f"error_{name}_{code}_{attempt}.png")
             random_delay(2, 4)
 
     log(f"FAIL: {name} ({pid}) / {code}")
