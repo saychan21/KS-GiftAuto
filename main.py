@@ -61,7 +61,7 @@ def init_driver():
 
     driver = uc.Chrome(
         options=options,
-        headless=True,
+        headless=False,   # 🔥 여기만 수정됨
         version_main=147
     )
 
