@@ -97,10 +97,11 @@ def login(driver, wait, pid, name):
 
     driver.save_screenshot(f"login_2_input_{name}.png")
 
-    login_btn = wait.until(
-        EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
-    )
-    login_btn.click()
+    buttons = wait.until(
+    EC.presence_of_all_elements_located((By.TAG_NAME, "button"))
+)
+
+buttons[0].click()
 
     time.sleep(3)
 
