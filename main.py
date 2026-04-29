@@ -12,8 +12,8 @@ from selenium.webdriver.chrome.options import Options
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 
-# 👉 GAS Web App URL 넣어
-GAS_URL = "https://script.google.com/macros/s/여기에URL/exec"
+# 👉 네가 준 URL 그대로 사용
+GAS_URL = "https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnRFIlOTyVJdSJ3kV55CMwfxhQCW3nNHfdSkSasfJ2Xz_5oL7pRS0JeHWO1oh0CsHMjLtODILOPLiQcIwcD3WXlg5d0tHhM2bUbkeTIdcp7gO4zCS_3fnQrgAthAS2cyxx7AkhJ47W6ZO2HH7FyY3E5GO9mVnCQB_MeSRsSu7ccXxoVAVfJORaJ6OlyoLLFno4hp3UOS2tlT0R19eoz5j0HODGeghGxEjqqrW7l3ynvjsG2ltlroyq_C0lu6yaUHZnMK3Lbigc9KZbr5LwtI0U_D-O8Dxw&lib=MQkbhZZh0RrYm1c-ORko8Rg8sAQHp0EVj"
 
 PLAYERS = {
     "Ethereal": "17770771",
@@ -44,15 +44,17 @@ def save_used_codes(codes):
         json.dump(list(codes), f)
 
 
-# =========================
 # 🔥 GAS에서 코드 가져오기
-# =========================
 def get_active_codes():
     try:
         res = requests.get(GAS_URL, timeout=10)
-        data = res.json()
 
+        print("STATUS:", res.status_code)
+        print("TEXT:", res.text[:200])
+
+        data = res.json()
         codes = data.get("codes", [])
+
         print("GAS 코드:", codes)
 
         return list(set(codes))
@@ -62,9 +64,7 @@ def get_active_codes():
         return []
 
 
-# =========================
 # Selenium 설정
-# =========================
 def init_driver():
     options = Options()
     options.add_argument("--headless=new")
@@ -73,7 +73,6 @@ def init_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--user-agent=Mozilla/5.0")
-    options.add_argument("--disable-blink-features=AutomationControlled")
 
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 15)
@@ -81,15 +80,13 @@ def init_driver():
     return driver, wait
 
 
-# =========================
-# 🔥 언어 무관 안정 XPath
-# =========================
+# 코드 적용 (언어 무관 안정 버전)
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
         try:
             driver.get(GIFT_URL)
 
-            # Player ID 입력 (첫 번째 input)
+            # Player ID 입력
             player_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[1]'))
             )
@@ -97,16 +94,16 @@ def apply_code(driver, wait, pid, name, code):
             player_input.send_keys(pid)
 
             # Login 버튼
-            driver.find_element(By.XPATH, '//button').click()
+            driver.find_element(By.TAG_NAME, "button").click()
 
-            # 코드 입력 (두 번째 input)
+            # Gift Code 입력
             code_input = wait.until(
                 EC.presence_of_element_located((By.XPATH, '(//input[@type="text"])[2]'))
             )
             code_input.clear()
             code_input.send_keys(code)
 
-            # Confirm 버튼
+            # Confirm 버튼 (마지막 버튼)
             buttons = driver.find_elements(By.TAG_NAME, "button")
             buttons[-1].click()
 
@@ -121,9 +118,6 @@ def apply_code(driver, wait, pid, name, code):
     return False
 
 
-# =========================
-# 실행
-# =========================
 def run():
     used_codes = load_used_codes()
     new_codes = get_active_codes()
