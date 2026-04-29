@@ -18,15 +18,6 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfi
 # 🔥 Player 직접 입력
 PLAYERS = [
     {"name": "Wireshark", "id": "37281298"},
-    {"name": "Infinity", "id": "136432206"},
-    {"name": "Ethereal", "id": "17770771"},
-    {"name": "ririshark", "id": "53048346"},
-    {"name": "riri", "id": "17836868"},
-    {"name": "Big Mike", "id": "18459308"},
-    {"name": "2nd", "id": "17377991"},
-    {"name": "아무하지", "id": "19032562"},
-    {"name": "ETMAN", "id": "17344803"},
-    {"name": "[YNV]Lancelot", "id": "17410235"},
 ]
 
 USED_CODES_FILE = "used_codes.json"
