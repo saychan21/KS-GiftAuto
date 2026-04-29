@@ -10,6 +10,7 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
 GIFT_URL = "https://ks-giftcode.centurygame.com/"
 CSV_URL = "https://docs.google.com/spreadsheets/d/1c2QmtlaBNsQ32j7JWly-ayigbkmfireBUisUEzxaJTY/export?format=csv"
@@ -70,7 +71,7 @@ def get_active_codes():
 def init_driver():
     options = Options()
 
-    # 👉 headless 유지
+    # ⚠️ headless 유지 (GitHub용)
     options.add_argument("--headless=new")
 
     options.add_argument("--no-sandbox")
@@ -78,9 +79,11 @@ def init_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
 
-    # 👉 중요한 부분 (봇 감지 완화)
+    # 👉 봇 감지 회피
     options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
+    options.add_argument(
+        "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
+    )
 
     options.binary_location = "/usr/bin/google-chrome"
 
@@ -92,7 +95,7 @@ def init_driver():
 
 
 # =============================
-# 🔥 핵심 로직
+# 🔥 핵심 로직 (완전 안정 버전)
 # =============================
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
@@ -114,7 +117,7 @@ def apply_code(driver, wait, pid, name, code):
             driver.save_screenshot(f"step2_input_{name}_{code}.png")
 
             # =====================
-            # 🔥 Login 버튼 클릭 (핵심 수정)
+            # Login 클릭 (🔥 핵심)
             # =====================
             login_btn = wait.until(
                 EC.presence_of_element_located((By.XPATH, '//button[contains(text(),"Login")]'))
@@ -123,22 +126,24 @@ def apply_code(driver, wait, pid, name, code):
             driver.execute_script("arguments[0].scrollIntoView(true);", login_btn)
             time.sleep(1)
 
-            driver.execute_script("arguments[0].click();", login_btn)
+            ActionChains(driver).move_to_element(login_btn).pause(0.5).click().perform()
 
-            time.sleep(3)
+            driver.save_screenshot(f"step3_click_login_{name}_{code}.png")
 
-            driver.save_screenshot(f"step3_login_{name}_{code}.png")
+            # 🔥 로그인 후 화면 변화 기다림 (중요)
+            code_input = WebDriverWait(driver, 15).until(
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Gift")]'))
+            )
+
+            driver.save_screenshot(f"step4_after_login_{name}_{code}.png")
 
             # =====================
             # Gift Code 입력
             # =====================
-            code_input = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Gift")]'))
-            )
             code_input.clear()
             code_input.send_keys(code)
 
-            driver.save_screenshot(f"step4_code_{name}_{code}.png")
+            driver.save_screenshot(f"step5_code_{name}_{code}.png")
 
             # =====================
             # Confirm 클릭
@@ -150,11 +155,11 @@ def apply_code(driver, wait, pid, name, code):
             driver.execute_script("arguments[0].scrollIntoView(true);", confirm_btn)
             time.sleep(1)
 
-            driver.execute_script("arguments[0].click();", confirm_btn)
+            ActionChains(driver).move_to_element(confirm_btn).pause(0.5).click().perform()
 
             time.sleep(2)
 
-            driver.save_screenshot(f"step5_done_{name}_{code}.png")
+            driver.save_screenshot(f"step6_done_{name}_{code}.png")
 
             log(f"SUCCESS: {name} / {code}")
             return True
