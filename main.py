@@ -70,12 +70,17 @@ def get_active_codes():
 def init_driver():
     options = Options()
 
+    # 👉 headless 유지
     options.add_argument("--headless=new")
+
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
-    options.add_argument("--user-agent=Mozilla/5.0")
+
+    # 👉 중요한 부분 (봇 감지 완화)
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36")
 
     options.binary_location = "/usr/bin/google-chrome"
 
@@ -87,7 +92,7 @@ def init_driver():
 
 
 # =============================
-# 🔥 핵심 (수정 완료 버전)
+# 🔥 핵심 로직
 # =============================
 def apply_code(driver, wait, pid, name, code):
     for attempt in range(MAX_RETRY):
@@ -97,43 +102,59 @@ def apply_code(driver, wait, pid, name, code):
 
             driver.save_screenshot(f"step1_page_{name}_{code}.png")
 
-            inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
-
-            if len(inputs) < 1:
-                raise Exception("input 없음")
-
-            inputs[0].clear()
-            inputs[0].send_keys(pid)
+            # =====================
+            # Player ID 입력
+            # =====================
+            player_input = wait.until(
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Player")]'))
+            )
+            player_input.clear()
+            player_input.send_keys(pid)
 
             driver.save_screenshot(f"step2_input_{name}_{code}.png")
 
-            # 🔥 핵심 수정 (Login 버튼 정확히 클릭)
+            # =====================
+            # 🔥 Login 버튼 클릭 (핵심 수정)
+            # =====================
             login_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Login")]'))
+                EC.presence_of_element_located((By.XPATH, '//button[contains(text(),"Login")]'))
             )
+
+            driver.execute_script("arguments[0].scrollIntoView(true);", login_btn)
+            time.sleep(1)
+
             driver.execute_script("arguments[0].click();", login_btn)
 
-            time.sleep(2)
+            time.sleep(3)
 
-            inputs = wait.until(lambda d: d.find_elements(By.TAG_NAME, "input"))
+            driver.save_screenshot(f"step3_login_{name}_{code}.png")
 
-            if len(inputs) < 2:
-                raise Exception("gift input 없음")
-
-            inputs[1].clear()
-            inputs[1].send_keys(code)
-
-            driver.save_screenshot(f"step3_code_{name}_{code}.png")
-
-            # 🔥 Confirm 버튼도 동일하게 안정화
-            confirm_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"Confirm")]'))
+            # =====================
+            # Gift Code 입력
+            # =====================
+            code_input = wait.until(
+                EC.presence_of_element_located((By.XPATH, '//input[contains(@placeholder,"Gift")]'))
             )
+            code_input.clear()
+            code_input.send_keys(code)
+
+            driver.save_screenshot(f"step4_code_{name}_{code}.png")
+
+            # =====================
+            # Confirm 클릭
+            # =====================
+            confirm_btn = wait.until(
+                EC.presence_of_element_located((By.XPATH, '//button[contains(text(),"Confirm")]'))
+            )
+
+            driver.execute_script("arguments[0].scrollIntoView(true);", confirm_btn)
+            time.sleep(1)
+
             driver.execute_script("arguments[0].click();", confirm_btn)
 
             time.sleep(2)
 
-            driver.save_screenshot(f"step4_done_{name}_{code}.png")
+            driver.save_screenshot(f"step5_done_{name}_{code}.png")
 
             log(f"SUCCESS: {name} / {code}")
             return True
