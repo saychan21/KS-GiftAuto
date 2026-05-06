@@ -1,22 +1,19 @@
-import requests
+import cloudscraper
 
 URL = "https://kingshot.net/api/gift-codes"
 
 def get_active_codes():
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Accept": "application/json"
-    }
+    scraper = cloudscraper.create_scraper()
 
-    res = requests.get(URL, headers=headers)
+    res = scraper.get(URL)
 
     print("STATUS:", res.status_code)
-    print("TEXT:", res.text[:200])  # 🔥 중요
+    print("TEXT:", res.text[:200])
 
     try:
         data = res.json()
     except:
-        print("❌ JSON 파싱 실패")
+        print("❌ JSON 실패")
         return []
 
     return [
@@ -24,12 +21,3 @@ def get_active_codes():
         for item in data["data"]["giftCodes"]
         if item["expiresAt"] is None
     ]
-
-def main():
-    codes = get_active_codes()
-
-    print("=== RESULT ===")
-    print(codes)
-
-if __name__ == "__main__":
-    main()
