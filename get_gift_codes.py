@@ -8,7 +8,7 @@ def get_active_codes():
     res = scraper.get(URL)
 
     print("STATUS:", res.status_code)
-    print("TEXT:", res.text[:200])
+    print("TEXT:", res.text[:200])  # 🔥 핵심
 
     try:
         data = res.json()
@@ -21,3 +21,12 @@ def get_active_codes():
         for item in data["data"]["giftCodes"]
         if item["expiresAt"] is None
     ]
+
+def main():
+    codes = get_active_codes()
+
+    print("=== RESULT ===")
+    print(codes)
+
+if __name__ == "__main__":
+    main()
